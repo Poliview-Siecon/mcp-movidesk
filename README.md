@@ -10,6 +10,7 @@ MCP server for interacting with the Movidesk public API via natural language, ex
 
 - List, search, create, and update tickets (`/tickets` and `/tickets/past`)
 - Upload attachments to ticket actions (`/ticketFileUpload`)
+- Download ticket attachments by hash (`/storage/download`), inline or saved to disk
 - List, search, create, and update persons/organizations (`/persons`)
 - OData filter support (`$filter`, `$select`, `$expand`, `$orderby`, `$top`, `$skip`) on listing tools
 - Error handling that forwards the error body returned by the Movidesk API
@@ -24,6 +25,7 @@ MCP server for interacting with the Movidesk public API via natural language, ex
 | `create_ticket` | Creates a new ticket |
 | `update_ticket` | Updates an existing ticket, including notes/replies via `actions` |
 | `upload_ticket_attachment` | Uploads a local file as an attachment to a ticket action |
+| `download_ticket_attachment` | Downloads an attachment by its hash (`path` in `actions[].attachments[]`); returns it inline (up to 5 MB) or saves it to `destinationPath` |
 | `list_persons` | Lists persons/organizations, with optional OData filters |
 | `get_person` | Fetches a person/organization by `id` |
 | `create_person` | Creates a new person/organization |

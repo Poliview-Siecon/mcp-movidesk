@@ -1,6 +1,6 @@
 {
   "name": "mcp-movidesk",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "MCP server para interação com a API do Movidesk via linguagem natural",
   "license": "MIT",
   "type": "module",

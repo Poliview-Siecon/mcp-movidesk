@@ -97,18 +97,24 @@ async function parseErrorBody(response: Response): Promise<string> {
   }
 }
 
-async function handleResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    if (response.status === 429) {
-      throw new MovideskApiError(
-        429,
-        'Limite de requisições por minuto da API do Movidesk foi atingido (429). Aguarde antes de tentar novamente.'
-      );
-    }
-
-    const detail = await parseErrorBody(response);
-    throw new MovideskApiError(response.status, `Erro na API do Movidesk (HTTP ${response.status}): ${detail}`);
+async function ensureOk(response: Response): Promise<void> {
+  if (response.ok) {
+    return;
   }
+
+  if (response.status === 429) {
+    throw new MovideskApiError(
+      429,
+      'Limite de requisições por minuto da API do Movidesk foi atingido (429). Aguarde antes de tentar novamente.'
+    );
+  }
+
+  const detail = await parseErrorBody(response);
+  throw new MovideskApiError(response.status, `Erro na API do Movidesk (HTTP ${response.status}): ${detail}`);
+}
+
+async function handleResponse<T>(response: Response): Promise<T> {
+  await ensureOk(response);
 
   const text = await response.text();
   return (text ? JSON.parse(text) : undefined) as T;
@@ -161,4 +167,47 @@ export async function uploadFile<T>(
     body: formData,
   });
   return handleResponse<T>(response);
+}
+
+export type DownloadedFile = {
+  content: Buffer;
+  contentType?: string;
+  fileName?: string;
+};
+
+// Extrai o nome do arquivo de Content-Disposition, priorizando filename*
+// (RFC 5987, UTF-8) sobre filename.
+export function parseContentDispositionFileName(header: string | null): string | undefined {
+  if (!header) {
+    return undefined;
+  }
+
+  const extended = /filename\*\s*=\s*(?:UTF-8|utf-8)''([^;]+)/.exec(header);
+  if (extended) {
+    try {
+      return decodeURIComponent(extended[1].trim().replace(/^"|"$/g, ''));
+    } catch {
+      // cai para filename simples
+    }
+  }
+
+  const simple = /filename\s*=\s*("([^"]*)"|[^;]+)/.exec(header);
+  if (simple) {
+    return (simple[2] ?? simple[1]).trim() || undefined;
+  }
+
+  return undefined;
+}
+
+export async function downloadFile(path: string, params: QueryParams): Promise<DownloadedFile> {
+  const url = `${BASE_URL}${path}?${buildQueryString(params)}`;
+  const response = await fetch(url);
+  await ensureOk(response);
+
+  const content = Buffer.from(await response.arrayBuffer());
+  return {
+    content,
+    contentType: response.headers.get('content-type') ?? undefined,
+    fileName: parseContentDispositionFileName(response.headers.get('content-disposition')),
+  };
 }
