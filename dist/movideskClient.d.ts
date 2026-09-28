@@ -15,4 +15,11 @@ export declare function get<T>(path: string, params?: QueryParams): Promise<T>;
 export declare function post<T>(path: string, body: unknown, params?: QueryParams): Promise<T>;
 export declare function patch<T>(path: string, body: unknown, params?: QueryParams): Promise<T>;
 export declare function uploadFile<T>(path: string, filePath: string, params: QueryParams): Promise<T>;
+export type DownloadedFile = {
+    content: Buffer;
+    contentType?: string;
+    fileName?: string;
+};
+export declare function parseContentDispositionFileName(header: string | null): string | undefined;
+export declare function downloadFile(path: string, params: QueryParams): Promise<DownloadedFile>;
 //# sourceMappingURL=movideskClient.d.ts.map

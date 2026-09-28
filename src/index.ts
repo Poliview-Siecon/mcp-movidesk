@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import * as movidesk from './movideskClient.js';
 import { handleUpdateTicket } from './updateTicketHandler.js';
 import { handleCreateTicket } from './createTicketHandler.js';
+import { handleDownloadAttachment } from './downloadAttachmentHandler.js';
 import { toText } from './toolResult.js';
 
 // ---------------------------------------------------------------------------
@@ -21,7 +22,7 @@ import { toText } from './toolResult.js';
 // ---------------------------------------------------------------------------
 function createServer(): Server {
   const server = new Server(
-    { name: 'mcp-movidesk', version: '1.0.0' },
+    { name: 'mcp-movidesk', version: '1.1.0' },
     { capabilities: { tools: {} } }
   );
 
@@ -235,6 +236,30 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
       },
     },
     {
+      name: 'download_ticket_attachment',
+      description:
+        'Baixa um anexo pelo hash (GET /storage/download). O hash é o campo "path" de actions[].attachments[] retornado por get_ticket. Sem destinationPath, o conteúdo é retornado inline (imagem, texto ou recurso binário em base64, até 5 MB). Com destinationPath, o arquivo é salvo no filesystem de onde o servidor MCP está sendo executado. A API limita este endpoint a 10 requisições por minuto.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'Hash do anexo (campo "path" em actions[].attachments[])' },
+          fileName: {
+            type: 'string',
+            description: 'Nome do arquivo (campo "fileName" do anexo); usado para nomear o arquivo salvo e inferir o tipo',
+          },
+          destinationPath: {
+            type: 'string',
+            description: 'Diretório existente ou caminho completo do arquivo onde salvar o anexo. Se omitido, retorna o conteúdo inline.',
+          },
+          overwrite: {
+            type: 'boolean',
+            description: 'Sobrescreve o arquivo de destino se já existir (padrão: false)',
+          },
+        },
+        required: ['path'],
+      },
+    },
+    {
       name: 'list_persons',
       description: 'Lista pessoas/organizações do Movidesk (GET /persons), com suporte a filtros OData.',
       inputSchema: {
@@ -364,6 +389,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
         const result = await movidesk.uploadFile('/ticketFileUpload', filePath, { id, actionId });
         return toText(result);
+      }
+
+      case 'download_ticket_attachment': {
+        return await handleDownloadAttachment(params);
       }
 
       case 'list_persons': {
