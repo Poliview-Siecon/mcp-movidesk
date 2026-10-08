@@ -90,7 +90,7 @@ function createServer() {
     };
     const actionsSchema = {
         type: 'array',
-        description: 'Ações/notas do ticket. Cada item precisa de "id" (use 0 para uma nota nova), de "type" (1 ou 2) e, quando id=0, de "createdBy.id". Para editar uma ação existente envie o seu "id" com "type" e "description" (HTML); "htmlDescription" é somente leitura.',
+        description: 'Ações/notas do ticket. Cada item precisa de "id" (use 0 para uma nota nova), de "type" (1 ou 2) e, quando id=0, de "createdBy.id". Para editar uma ação existente envie o seu "id" com "type" e "description" (HTML); "htmlDescription" é somente leitura. O status do ticket NÃO muda por actions[].status (a API ignora); use o campo status do ticket com justification.',
         items: {
             type: 'object',
             properties: {
@@ -98,11 +98,6 @@ function createServer() {
                 type: { type: 'number', description: 'Tipo da ação (1 = nota interna, 2 = resposta pública)' },
                 description: { type: 'string', description: 'Texto da nota/ação. Prefira HTML (<p>, <b>, <ol>...). Texto puro é convertido automaticamente para HTML (linhas em branco viram parágrafos, quebras simples viram <br>).' },
                 createdBy: personRefSchema,
-                status: {
-                    type: 'string',
-                    description: 'Status do ticket após este trâmite (ex.: Cancelado, Resolvido, Em atendimento). É assim que a tela do Movidesk cancela/resolve: novo trâmite com o status. Omitir mantém o status atual.',
-                },
-                justification: { type: 'string', description: 'Justificativa do status, quando o status exigir (ex.: Aguardando)' },
                 timeAppointments: timeAppointmentsSchema,
             },
             required: ['id', 'type'],
@@ -255,7 +250,7 @@ function createServer() {
                         actions: actionsSchema,
                         tags: tagsSchema,
                         customFieldValues: customFieldValuesSchema,
-                        status: { type: 'string', description: 'Novo status direto no ticket. Para cancelar/resolver prefira um novo trâmite com status (actions[].status), como a tela do Movidesk faz; este campo exige justification na API.' },
+                        status: { type: 'string', description: 'Novo status do ticket (PATCH). A API exige junto uma justification cadastrada para ESSE status (erros: Update both Status and Reason, sem justificativa; There is no match for the Reason value entered, se a justificativa não pertence ao status). Status sem justificativa cadastrada (ex.: Cancelado/Resolvido em contas que não cadastraram) não mudam pela API: cadastre a justificativa nas configurações do Movidesk ou mude pela tela. actions[].status é ignorado pela API.' },
                         justification: { type: 'string', description: 'Justificativa do status, obrigatória na API ao mudar status (erro "Update both Status and Reason"). Deve ser exatamente uma justificativa cadastrada no Movidesk para aquele status.' },
                         replaceTags: { type: 'boolean', description: 'true = as tags enviadas substituem todas as existentes (permite remover). Padrão: mescla.' },
                         replaceCustomFieldValues: { type: 'boolean', description: 'true = os campos personalizados enviados substituem todos os existentes. Padrão: mescla.' },
