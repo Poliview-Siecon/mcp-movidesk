@@ -1,5 +1,6 @@
 import * as movidesk from './movideskClient.js';
 import { validateCreateTicketPayload } from './createTicketValidation.js';
+import { normalizeActionsToHtml } from './ticketHtml.js';
 import { type ToolResult, toText, toError } from './toolResult.js';
 
 export async function handleCreateTicket(params: Record<string, unknown>): Promise<ToolResult> {
@@ -8,6 +9,7 @@ export async function handleCreateTicket(params: Record<string, unknown>): Promi
     return toError(validation.message);
   }
 
-  const result = await movidesk.post('/tickets', params);
+  const payload = 'actions' in params ? { ...params, actions: normalizeActionsToHtml(params.actions) } : params;
+  const result = await movidesk.post('/tickets', payload);
   return toText(result);
 }

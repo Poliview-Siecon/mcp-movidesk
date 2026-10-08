@@ -80,19 +80,81 @@ const personRefSchema = {
   additionalProperties: true,
 };
 
+const timeAppointmentsSchema = {
+  type: 'array',
+  description:
+    'Apontamentos de tempo do trâmite. Cada item: activity (ex.: Atendimento), date (AAAA-MM-DDT00:00:00), periodStart e periodEnd (HH:mm:ss), workTime (HH:mm:ss), workTypeName (ex.: Normal temporário), createdBy {id} e createdByTeam {id, name}.',
+  items: {
+    type: 'object',
+    properties: {
+      activity: { type: 'string', description: 'Atividade (ex.: Atendimento)' },
+      date: { type: 'string', description: 'Data do apontamento (AAAA-MM-DDT00:00:00)' },
+      periodStart: { type: 'string', description: 'Hora inicial (HH:mm:ss)' },
+      periodEnd: { type: 'string', description: 'Hora final (HH:mm:ss)' },
+      workTime: { type: 'string', description: 'Tempo trabalhado (HH:mm:ss)' },
+      workTypeName: { type: 'string', description: 'Tipo de hora (ex.: Normal temporário)' },
+      createdBy: personRefSchema,
+      createdByTeam: {
+        type: 'object',
+        properties: { id: { type: 'number' }, name: { type: 'string' } },
+        additionalProperties: true,
+      },
+    },
+    additionalProperties: true,
+  },
+};
+
 const actionsSchema = {
   type: 'array',
   description:
-    'Ações/notas do ticket. Cada item precisa de "id" (use 0 para uma nota nova) e, quando id=0, de "createdBy.id".',
+    'Ações/notas do ticket. Cada item precisa de "id" (use 0 para uma nota nova), de "type" (1 ou 2) e, quando id=0, de "createdBy.id". Para editar uma ação existente envie o seu "id" com "type" e "description" (HTML); "htmlDescription" é somente leitura. O status do ticket NÃO muda por actions[].status (a API ignora); use o campo status do ticket com justification.',
   items: {
     type: 'object',
     properties: {
       id: { type: 'number', description: 'Id da ação (0 para uma nota nova)' },
       type: { type: 'number', description: 'Tipo da ação (1 = nota interna, 2 = resposta pública)' },
-      description: { type: 'string', description: 'Texto da nota/ação' },
+      description: { type: 'string', description: 'Texto da nota/ação. Prefira HTML (<p>, <b>, <ol>...). Texto puro é convertido automaticamente para HTML (linhas em branco viram parágrafos, quebras simples viram <br>).' },
       createdBy: personRefSchema,
+      timeAppointments: timeAppointmentsSchema,
     },
-    required: ['id'],
+    required: ['id', 'type'],
+    additionalProperties: true,
+  },
+};
+
+const tagsSchema = {
+  type: 'array',
+  description: 'Tags do ticket (lista de textos). Em update, as tags enviadas são ADICIONADAS às existentes (o MCP mescla com o ticket atual); para remover tags use replaceTags=true e envie a lista final completa.',
+  items: { type: 'string' },
+};
+
+const customFieldValuesSchema = {
+  type: 'array',
+  description:
+    'Campos personalizados do ticket. Em update, os itens enviados são mesclados com os campos já existentes (chave customFieldId+customFieldRuleId+line: o enviado substitui o existente, os demais são preservados); para substituir tudo use replaceCustomFieldValues=true. Cada item: customFieldId, customFieldRuleId, line (normalmente 1), value (texto/número ou null) e items (lista de { personId, clientId, team, customFieldItem }, com as chaves não usadas como null). Exemplo de seleção: { "customFieldId": 42652, "customFieldRuleId": 21010, "line": 1, "value": null, "items": [{ "personId": null, "clientId": null, "team": null, "customFieldItem": "005" }] }.',
+  items: {
+    type: 'object',
+    properties: {
+      customFieldId: { type: 'number', description: 'Id do campo personalizado' },
+      customFieldRuleId: { type: 'number', description: 'Id da regra de exibição do campo' },
+      line: { type: 'number', description: 'Linha do campo (1 para campos sem repetição)' },
+      value: { type: ['string', 'number', 'null'], description: 'Valor simples do campo (ou null quando usa items)' },
+      items: {
+        type: 'array',
+        description: 'Itens selecionados/preenchidos',
+        items: {
+          type: 'object',
+          properties: {
+            personId: { type: ['string', 'null'] },
+            clientId: { type: ['string', 'null'] },
+            team: { type: ['string', 'null'] },
+            customFieldItem: { type: ['string', 'null'], description: 'Texto do item de lista selecionado' },
+          },
+          additionalProperties: true,
+        },
+      },
+    },
+    required: ['customFieldId', 'customFieldRuleId', 'line'],
     additionalProperties: true,
   },
 };
@@ -200,6 +262,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           ownerTeam: { type: 'string', description: 'Nome da equipe responsável' },
           clients: { type: 'array', items: personRefSchema, description: 'Clientes do ticket (ao menos um item com "id")' },
           actions: actionsSchema,
+
+          tags: tagsSchema,
+
+          customFieldValues: customFieldValuesSchema,
         },
         required: ['type', 'subject'],
         additionalProperties: true,
@@ -216,6 +282,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           owner: personRefSchema,
           ownerTeam: { type: 'string', description: 'Nome da equipe responsável' },
           actions: actionsSchema,
+
+          tags: tagsSchema,
+
+          customFieldValues: customFieldValuesSchema,
+          status: { type: 'string', description: 'Novo status do ticket (PATCH), ex.: Em atendimento, Aguardando, Resolvido, Cancelado. A API exige que o campo justification acompanhe o status: se você não informar, o MCP envia justification vazia (aceito para Resolvido). Para status com justificativas cadastradas (ex.: Aguardando) informe uma delas exatamente como cadastrada. actions[].status é ignorado pela API.' },
+          justification: { type: 'string', description: 'Justificativa do status, obrigatória na API ao mudar status (erro "Update both Status and Reason"). Deve ser exatamente uma justificativa cadastrada no Movidesk para aquele status.' },
+          replaceTags: { type: 'boolean', description: 'true = as tags enviadas substituem todas as existentes (permite remover). Padrão: mescla.' },
+          replaceCustomFieldValues: { type: 'boolean', description: 'true = os campos personalizados enviados substituem todos os existentes. Padrão: mescla.' },
         },
         required: ['id'],
         additionalProperties: true,

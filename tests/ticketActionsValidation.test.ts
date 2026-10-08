@@ -24,11 +24,16 @@ test('ação nova válida (id: 0 + createdBy.id) é aceita', () => {
 });
 
 test('ação existente (id != 0) não exige createdBy', () => {
-  const result = validateActions([{ id: 5, status: 'Resolvido' }]);
+  const result = validateActions([{ id: 5, type: 1, status: 'Resolvido' }]);
   assert.deepEqual(result, { ok: true });
 });
 
 test('actions que não é array é rejeitado', () => {
   const result = validateActions('não é um array');
+  assert.equal(result.ok, false);
+});
+
+test('ação sem type é rejeitada', () => {
+  const result = validateActions([{ id: 1, description: '<p>texto</p>' }]);
   assert.equal(result.ok, false);
 });
