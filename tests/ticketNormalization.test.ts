@@ -100,6 +100,27 @@ test('update_ticket com replaceTags não lê o ticket e envia só as tags inform
   }
 });
 
+test('update_ticket com status sem justification envia justification vazia', async () => {
+  const originalFetch = global.fetch;
+  const bodies: string[] = [];
+  global.fetch = (async (_url: string, init?: RequestInit) => {
+    bodies.push(init?.body as string);
+    return fakeResponse(200, {});
+  }) as unknown as typeof fetch;
+
+  try {
+    await handleUpdateTicket({ id: 1, status: 'Resolvido' });
+    await handleUpdateTicket({ id: 1, status: 'Aguardando', justification: 'Retorno do cliente' });
+    await handleUpdateTicket({ id: 1, subject: 'sem status' });
+
+    assert.deepEqual(JSON.parse(bodies[0]), { status: 'Resolvido', justification: '' });
+    assert.deepEqual(JSON.parse(bodies[1]), { status: 'Aguardando', justification: 'Retorno do cliente' });
+    assert.deepEqual(JSON.parse(bodies[2]), { subject: 'sem status' });
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
 test('create_ticket e update_ticket enviam description de ação em HTML', async () => {
   const originalFetch = global.fetch;
   const bodies: string[] = [];

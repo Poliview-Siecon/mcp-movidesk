@@ -26,6 +26,9 @@ export async function handleUpdateTicket(params) {
         return toError(validation.message);
     }
     const payload = await mergeWithCurrentTicket(id, ticket, replaceTags === true, replaceCustomFieldValues === true);
+    if ('status' in payload && (payload.justification === undefined || payload.justification === null)) {
+        payload.justification = '';
+    }
     if ('actions' in payload) {
         payload.actions = normalizeActionsToHtml(payload.actions);
     }

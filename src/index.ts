@@ -286,7 +286,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           tags: tagsSchema,
 
           customFieldValues: customFieldValuesSchema,
-          status: { type: 'string', description: 'Novo status do ticket (PATCH). A API exige junto uma justification cadastrada para ESSE status (erros: Update both Status and Reason, sem justificativa; There is no match for the Reason value entered, se a justificativa não pertence ao status). Status sem justificativa cadastrada (ex.: Cancelado/Resolvido em contas que não cadastraram) não mudam pela API: cadastre a justificativa nas configurações do Movidesk ou mude pela tela. actions[].status é ignorado pela API.' },
+          status: { type: 'string', description: 'Novo status do ticket (PATCH), ex.: Em atendimento, Aguardando, Resolvido, Cancelado. A API exige que o campo justification acompanhe o status: se você não informar, o MCP envia justification vazia (aceito para Resolvido). Para status com justificativas cadastradas (ex.: Aguardando) informe uma delas exatamente como cadastrada. actions[].status é ignorado pela API.' },
           justification: { type: 'string', description: 'Justificativa do status, obrigatória na API ao mudar status (erro "Update both Status and Reason"). Deve ser exatamente uma justificativa cadastrada no Movidesk para aquele status.' },
           replaceTags: { type: 'boolean', description: 'true = as tags enviadas substituem todas as existentes (permite remover). Padrão: mescla.' },
           replaceCustomFieldValues: { type: 'boolean', description: 'true = os campos personalizados enviados substituem todos os existentes. Padrão: mescla.' },
