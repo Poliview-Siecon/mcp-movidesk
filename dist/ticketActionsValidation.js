@@ -21,6 +21,12 @@ export function validateActions(actions) {
                 message: `actions[${i}].id é obrigatório (use 0 para registrar uma ação/nota nova).`,
             };
         }
+        if (action.type !== 1 && action.type !== 2) {
+            return {
+                ok: false,
+                message: `actions[${i}].type é obrigatório (1 = nota interna, 2 = resposta pública), inclusive ao editar uma ação existente.`,
+            };
+        }
         if (action.id === 0) {
             const createdBy = action.createdBy;
             if (!isRecord(createdBy) || !createdBy.id) {

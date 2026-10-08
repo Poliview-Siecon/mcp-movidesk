@@ -31,7 +31,7 @@ test('ação nova válida (id: 0 + createdBy.id) é aceita', () => {
 
 test('ação existente (id != 0) não exige createdBy', () => {
   const result = validateUpdateTicketPayload({
-    actions: [{ id: 5, status: 'Resolvido' }],
+    actions: [{ id: 5, type: 1, status: 'Resolvido' }],
   });
   assert.deepEqual(result, { ok: true });
 });

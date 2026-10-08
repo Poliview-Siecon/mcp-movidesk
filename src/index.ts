@@ -83,16 +83,53 @@ const personRefSchema = {
 const actionsSchema = {
   type: 'array',
   description:
-    'Ações/notas do ticket. Cada item precisa de "id" (use 0 para uma nota nova) e, quando id=0, de "createdBy.id".',
+    'Ações/notas do ticket. Cada item precisa de "id" (use 0 para uma nota nova), de "type" (1 ou 2) e, quando id=0, de "createdBy.id". Para editar uma ação existente envie o seu "id" com "type" e "description" (HTML); "htmlDescription" é somente leitura.',
   items: {
     type: 'object',
     properties: {
       id: { type: 'number', description: 'Id da ação (0 para uma nota nova)' },
       type: { type: 'number', description: 'Tipo da ação (1 = nota interna, 2 = resposta pública)' },
-      description: { type: 'string', description: 'Texto da nota/ação' },
+      description: { type: 'string', description: 'Texto da nota/ação. Aceita HTML (<p>, <b>, <ol>...)' },
       createdBy: personRefSchema,
     },
-    required: ['id'],
+    required: ['id', 'type'],
+    additionalProperties: true,
+  },
+};
+
+const tagsSchema = {
+  type: 'array',
+  description: 'Tags do ticket (lista de textos). Em update, substitui as tags existentes.',
+  items: { type: 'string' },
+};
+
+const customFieldValuesSchema = {
+  type: 'array',
+  description:
+    'Campos personalizados do ticket. Cada item: customFieldId, customFieldRuleId, line (normalmente 1), value (texto/número ou null) e items (lista de { personId, clientId, team, customFieldItem }, com as chaves não usadas como null). Exemplo de seleção: { "customFieldId": 42652, "customFieldRuleId": 21010, "line": 1, "value": null, "items": [{ "personId": null, "clientId": null, "team": null, "customFieldItem": "005" }] }.',
+  items: {
+    type: 'object',
+    properties: {
+      customFieldId: { type: 'number', description: 'Id do campo personalizado' },
+      customFieldRuleId: { type: 'number', description: 'Id da regra de exibição do campo' },
+      line: { type: 'number', description: 'Linha do campo (1 para campos sem repetição)' },
+      value: { type: ['string', 'number', 'null'], description: 'Valor simples do campo (ou null quando usa items)' },
+      items: {
+        type: 'array',
+        description: 'Itens selecionados/preenchidos',
+        items: {
+          type: 'object',
+          properties: {
+            personId: { type: ['string', 'null'] },
+            clientId: { type: ['string', 'null'] },
+            team: { type: ['string', 'null'] },
+            customFieldItem: { type: ['string', 'null'], description: 'Texto do item de lista selecionado' },
+          },
+          additionalProperties: true,
+        },
+      },
+    },
+    required: ['customFieldId', 'customFieldRuleId', 'line'],
     additionalProperties: true,
   },
 };
@@ -200,6 +237,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           ownerTeam: { type: 'string', description: 'Nome da equipe responsável' },
           clients: { type: 'array', items: personRefSchema, description: 'Clientes do ticket (ao menos um item com "id")' },
           actions: actionsSchema,
+
+          tags: tagsSchema,
+
+          customFieldValues: customFieldValuesSchema,
         },
         required: ['type', 'subject'],
         additionalProperties: true,
@@ -216,6 +257,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           owner: personRefSchema,
           ownerTeam: { type: 'string', description: 'Nome da equipe responsável' },
           actions: actionsSchema,
+
+          tags: tagsSchema,
+
+          customFieldValues: customFieldValuesSchema,
         },
         required: ['id'],
         additionalProperties: true,
