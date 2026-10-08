@@ -11,6 +11,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { inspect } from 'node:util';
 import { fileURLToPath } from 'node:url';
+import { realpathSync } from 'node:fs';
 import * as movidesk from './movideskClient.js';
 import { handleUpdateTicket } from './updateTicketHandler.js';
 import { handleCreateTicket } from './createTicketHandler.js';
@@ -567,7 +568,21 @@ async function main() {
   await createServer().connect(transport);
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+// Compara caminhos reais: via link simbólico/junção (ex.: nvm4w no Windows ou bin
+// global do npm) argv[1] é o caminho do link e o servidor nunca iniciava.
+function isMainModule(): boolean {
+  if (!process.argv[1]) {
+    return false;
+  }
+
+  try {
+    return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]);
+  } catch {
+    return false;
+  }
+}
+
+if (isMainModule()) {
   main().catch((err) => {
     console.error('Erro fatal:', err);
     process.exit(1);
