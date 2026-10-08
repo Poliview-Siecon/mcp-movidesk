@@ -196,6 +196,19 @@ MOVIDESK_TOKEN=your-token-here npm start
 
 This repository intentionally tracks `dist/` to support `npx github:user/repo` usage.
 
+There is no `prepare` script on purpose: installing from GitHub uses the committed `dist/` as is, without installing dev dependencies or compiling (a cold `npx` used to take ~36 s, longer than the MCP client start-up timeout). After changing `src/`, always run `npm run build` and commit `dist/`.
+
+## Fast install (recommended)
+
+Install once and run the binary directly, which starts in seconds and without network access:
+
+```bash
+npm install -g github:Poliview-Siecon/mcp-movidesk
+claude mcp add movidesk -s user -e 'MOVIDESK_TOKEN=${MOVIDESK_TOKEN}' -- cmd /c mcp-movidesk
+```
+
+To update, run the `npm install -g` command again.
+
 The project uses a Husky `pre-commit` hook to:
 1. build TypeScript (`npm run build`)
 2. stage generated artifacts (`git add dist`)
