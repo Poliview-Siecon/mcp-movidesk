@@ -89,7 +89,7 @@ const actionsSchema = {
     properties: {
       id: { type: 'number', description: 'Id da ação (0 para uma nota nova)' },
       type: { type: 'number', description: 'Tipo da ação (1 = nota interna, 2 = resposta pública)' },
-      description: { type: 'string', description: 'Texto da nota/ação. Aceita HTML (<p>, <b>, <ol>...)' },
+      description: { type: 'string', description: 'Texto da nota/ação. Prefira HTML (<p>, <b>, <ol>...). Texto puro é convertido automaticamente para HTML (linhas em branco viram parágrafos, quebras simples viram <br>).' },
       createdBy: personRefSchema,
     },
     required: ['id', 'type'],
@@ -99,14 +99,14 @@ const actionsSchema = {
 
 const tagsSchema = {
   type: 'array',
-  description: 'Tags do ticket (lista de textos). Em update, substitui as tags existentes.',
+  description: 'Tags do ticket (lista de textos). Em update, as tags enviadas são ADICIONADAS às existentes (o MCP mescla com o ticket atual); para remover tags use replaceTags=true e envie a lista final completa.',
   items: { type: 'string' },
 };
 
 const customFieldValuesSchema = {
   type: 'array',
   description:
-    'Campos personalizados do ticket. ATENÇÃO: em update, a lista enviada substitui TODOS os campos personalizados do ticket; inclua também os valores já existentes (leia com get_ticket antes), senão os omitidos são apagados. Cada item: customFieldId, customFieldRuleId, line (normalmente 1), value (texto/número ou null) e items (lista de { personId, clientId, team, customFieldItem }, com as chaves não usadas como null). Exemplo de seleção: { "customFieldId": 42652, "customFieldRuleId": 21010, "line": 1, "value": null, "items": [{ "personId": null, "clientId": null, "team": null, "customFieldItem": "005" }] }.',
+    'Campos personalizados do ticket. Em update, os itens enviados são mesclados com os campos já existentes (chave customFieldId+customFieldRuleId+line: o enviado substitui o existente, os demais são preservados); para substituir tudo use replaceCustomFieldValues=true. Cada item: customFieldId, customFieldRuleId, line (normalmente 1), value (texto/número ou null) e items (lista de { personId, clientId, team, customFieldItem }, com as chaves não usadas como null). Exemplo de seleção: { "customFieldId": 42652, "customFieldRuleId": 21010, "line": 1, "value": null, "items": [{ "personId": null, "clientId": null, "team": null, "customFieldItem": "005" }] }.',
   items: {
     type: 'object',
     properties: {
@@ -261,6 +261,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           tags: tagsSchema,
 
           customFieldValues: customFieldValuesSchema,
+          replaceTags: { type: 'boolean', description: 'true = as tags enviadas substituem todas as existentes (permite remover). Padrão: mescla.' },
+          replaceCustomFieldValues: { type: 'boolean', description: 'true = os campos personalizados enviados substituem todos os existentes. Padrão: mescla.' },
         },
         required: ['id'],
         additionalProperties: true,
