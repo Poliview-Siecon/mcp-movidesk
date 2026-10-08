@@ -106,7 +106,7 @@ const tagsSchema = {
 const customFieldValuesSchema = {
   type: 'array',
   description:
-    'Campos personalizados do ticket. Cada item: customFieldId, customFieldRuleId, line (normalmente 1), value (texto/número ou null) e items (lista de { personId, clientId, team, customFieldItem }, com as chaves não usadas como null). Exemplo de seleção: { "customFieldId": 42652, "customFieldRuleId": 21010, "line": 1, "value": null, "items": [{ "personId": null, "clientId": null, "team": null, "customFieldItem": "005" }] }.',
+    'Campos personalizados do ticket. ATENÇÃO: em update, a lista enviada substitui TODOS os campos personalizados do ticket; inclua também os valores já existentes (leia com get_ticket antes), senão os omitidos são apagados. Cada item: customFieldId, customFieldRuleId, line (normalmente 1), value (texto/número ou null) e items (lista de { personId, clientId, team, customFieldItem }, com as chaves não usadas como null). Exemplo de seleção: { "customFieldId": 42652, "customFieldRuleId": 21010, "line": 1, "value": null, "items": [{ "personId": null, "clientId": null, "team": null, "customFieldItem": "005" }] }.',
   items: {
     type: 'object',
     properties: {
