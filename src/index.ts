@@ -261,6 +261,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           tags: tagsSchema,
 
           customFieldValues: customFieldValuesSchema,
+          status: { type: 'string', description: 'Novo status do ticket (ex.: Em atendimento, Resolvido, Cancelado). A API exige enviar junto a justification quando o status é de parada/encerramento.' },
+          justification: { type: 'string', description: 'Justificativa do status, obrigatória na API ao mudar status (erro "Update both Status and Reason"). Deve ser exatamente uma justificativa cadastrada no Movidesk para aquele status.' },
           replaceTags: { type: 'boolean', description: 'true = as tags enviadas substituem todas as existentes (permite remover). Padrão: mescla.' },
           replaceCustomFieldValues: { type: 'boolean', description: 'true = os campos personalizados enviados substituem todos os existentes. Padrão: mescla.' },
         },
