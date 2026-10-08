@@ -66,6 +66,28 @@ function createServer() {
         required: ['id'],
         additionalProperties: true,
     };
+    const timeAppointmentsSchema = {
+        type: 'array',
+        description: 'Apontamentos de tempo do trâmite. Cada item: activity (ex.: Atendimento), date (AAAA-MM-DDT00:00:00), periodStart e periodEnd (HH:mm:ss), workTime (HH:mm:ss), workTypeName (ex.: Normal temporário), createdBy {id} e createdByTeam {id, name}.',
+        items: {
+            type: 'object',
+            properties: {
+                activity: { type: 'string', description: 'Atividade (ex.: Atendimento)' },
+                date: { type: 'string', description: 'Data do apontamento (AAAA-MM-DDT00:00:00)' },
+                periodStart: { type: 'string', description: 'Hora inicial (HH:mm:ss)' },
+                periodEnd: { type: 'string', description: 'Hora final (HH:mm:ss)' },
+                workTime: { type: 'string', description: 'Tempo trabalhado (HH:mm:ss)' },
+                workTypeName: { type: 'string', description: 'Tipo de hora (ex.: Normal temporário)' },
+                createdBy: personRefSchema,
+                createdByTeam: {
+                    type: 'object',
+                    properties: { id: { type: 'number' }, name: { type: 'string' } },
+                    additionalProperties: true,
+                },
+            },
+            additionalProperties: true,
+        },
+    };
     const actionsSchema = {
         type: 'array',
         description: 'Ações/notas do ticket. Cada item precisa de "id" (use 0 para uma nota nova), de "type" (1 ou 2) e, quando id=0, de "createdBy.id". Para editar uma ação existente envie o seu "id" com "type" e "description" (HTML); "htmlDescription" é somente leitura.',
@@ -76,6 +98,12 @@ function createServer() {
                 type: { type: 'number', description: 'Tipo da ação (1 = nota interna, 2 = resposta pública)' },
                 description: { type: 'string', description: 'Texto da nota/ação. Prefira HTML (<p>, <b>, <ol>...). Texto puro é convertido automaticamente para HTML (linhas em branco viram parágrafos, quebras simples viram <br>).' },
                 createdBy: personRefSchema,
+                status: {
+                    type: 'string',
+                    description: 'Status do ticket após este trâmite (ex.: Cancelado, Resolvido, Em atendimento). É assim que a tela do Movidesk cancela/resolve: novo trâmite com o status. Omitir mantém o status atual.',
+                },
+                justification: { type: 'string', description: 'Justificativa do status, quando o status exigir (ex.: Aguardando)' },
+                timeAppointments: timeAppointmentsSchema,
             },
             required: ['id', 'type'],
             additionalProperties: true,
@@ -227,7 +255,7 @@ function createServer() {
                         actions: actionsSchema,
                         tags: tagsSchema,
                         customFieldValues: customFieldValuesSchema,
-                        status: { type: 'string', description: 'Novo status do ticket (ex.: Em atendimento, Resolvido, Cancelado). A API exige enviar junto a justification quando o status é de parada/encerramento.' },
+                        status: { type: 'string', description: 'Novo status direto no ticket. Para cancelar/resolver prefira um novo trâmite com status (actions[].status), como a tela do Movidesk faz; este campo exige justification na API.' },
                         justification: { type: 'string', description: 'Justificativa do status, obrigatória na API ao mudar status (erro "Update both Status and Reason"). Deve ser exatamente uma justificativa cadastrada no Movidesk para aquele status.' },
                         replaceTags: { type: 'boolean', description: 'true = as tags enviadas substituem todas as existentes (permite remover). Padrão: mescla.' },
                         replaceCustomFieldValues: { type: 'boolean', description: 'true = os campos personalizados enviados substituem todos os existentes. Padrão: mescla.' },
