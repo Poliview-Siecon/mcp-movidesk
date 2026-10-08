@@ -203,9 +203,11 @@ There is no `prepare` script on purpose: installing from GitHub uses the committ
 Install once and run the binary directly, which starts in seconds and without network access:
 
 ```bash
-npm install -g github:Poliview-Siecon/mcp-movidesk
+npm install -g https://codeload.github.com/Poliview-Siecon/mcp-movidesk/tar.gz/refs/heads/main
 claude mcp add movidesk -s user -e 'MOVIDESK_TOKEN=${MOVIDESK_TOKEN}' -- cmd /c mcp-movidesk
 ```
+
+Use the tarball URL instead of `github:Poliview-Siecon/mcp-movidesk`: on Windows the `github:` form can leave a broken link to a temporary clone. In Git Bash prefix the `claude mcp add` command with `MSYS_NO_PATHCONV=1` (or use PowerShell), otherwise `/c` is rewritten to `C:/`.
 
 To update, run the `npm install -g` command again.
 
